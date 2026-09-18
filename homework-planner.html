@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homework Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --paper:#f6f3ec;
+    --ink:#20241f;
+    --ink-soft:#565b52;
+    --rule:#d8d2c2;
+    --line:#c9c2ac;
+    --card:#fffdf7;
+    --high:#c0432c;
+    --high-bg:#fbe6e0;
+    --med:#a3711b;
+    --med-bg:#f6e8cf;
+    --low:#3d6b52;
+    --low-bg:#e2eee5;
+    --accent:#20241f;
+    --done:#9a9787;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    min-height:100vh;
+  }
+
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding:3rem 1.5rem 6rem;
+  }
+
+  header{
+    margin-bottom:2.5rem;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:1.5rem;
+  }
+  header h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:2.1rem;
+    margin:0 0 0.3rem;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:0.95rem;
+  }
+
+  .stats{
+    display:flex;
+    gap:1.5rem;
+    margin-top:1.2rem;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+  }
+  .stats b{ color:var(--ink); font-weight:600; }
+
+  /* Add form */
+  .add-panel{
+    background:var(--card);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:1.2rem 1.3rem;
+    margin-bottom:2.2rem;
+  }
+  .add-panel h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.05rem;
+    margin:0 0 0.9rem;
+  }
+  .add-grid{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    gap:0.7rem;
+  }
+  .add-grid input[type=text]{ grid-column:1 / -1; }
+  .field{ display:flex; flex-direction:column; gap:0.3rem; }
+  .field label{ font-size:0.72rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft); }
+  input, select, textarea{
+    font-family:inherit;
+    font-size:0.92rem;
+    padding:0.5rem 0.6rem;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#fff;
+    color:var(--ink);
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color:var(--ink);
+  }
+  .add-actions{
+    grid-column:1 / -1;
+    display:flex;
+    justify-content:flex-end;
+    margin-top:0.3rem;
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .btn-primary{
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:0.55rem 1.1rem;
+    border-radius:6px;
+    font-size:0.88rem;
+    font-weight:500;
+  }
+  .btn-primary:hover{ background:#3a4036; }
+
+  /* Controls row */
+  .controls{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:1rem;
+    flex-wrap:wrap;
+    gap:0.6rem;
+  }
+  .controls .sort-group{ display:flex; align-items:center; gap:0.5rem; }
+  .controls label{ font-size:0.8rem; color:var(--ink-soft); }
+  .controls select{ padding:0.35rem 0.5rem; font-size:0.85rem; }
+  .toggle-done{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:0.35rem 0.7rem;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+  }
+  .toggle-done.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+  /* Task list */
+  .group-heading{
+    font-family:'Fraunces',serif;
+    font-size:0.95rem;
+    font-weight:600;
+    margin:1.6rem 0 0.6rem;
+    color:var(--ink-soft);
+  }
+  .group-heading:first-of-type{ margin-top:0; }
+
+  .task{
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    align-items:start;
+    gap:0.8rem;
+    background:var(--card);
+    border:1px solid var(--rule);
+    border-left:3px solid var(--line);
+    border-radius:8px;
+    padding:0.85rem 1rem;
+    margin-bottom:0.55rem;
+  }
+  .task.pri-high{ border-left-color:var(--high); }
+  .task.pri-medium{ border-left-color:var(--med); }
+  .task.pri-low{ border-left-color:var(--low); }
+  .task.done{ opacity:0.55; }
+
+  .task input[type=checkbox]{
+    margin-top:0.25rem;
+    width:17px;
+    height:17px;
+    accent-color:var(--ink);
+  }
+
+  .task-main .task-top{
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+    flex-wrap:wrap;
+    margin-bottom:0.15rem;
+  }
+  .task-name{
+    font-size:0.98rem;
+    font-weight:500;
+  }
+  .task.done .task-name{ text-decoration:line-through; color:var(--done); }
+
+  .subject-tag{
+    font-size:0.7rem;
+    padding:0.12rem 0.5rem;
+    border-radius:999px;
+    background:#eee9db;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .pri-tag{
+    font-size:0.68rem;
+    padding:0.12rem 0.5rem;
+    border-radius:999px;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .pri-high .pri-tag, .task-meta .pri-high-tag{ background:var(--high-bg); color:var(--high); }
+  .pri-tag.high{ background:var(--high-bg); color:var(--high); }
+  .pri-tag.medium{ background:var(--med-bg); color:var(--med); }
+  .pri-tag.low{ background:var(--low-bg); color:var(--low); }
+
+  .task-meta{
+    font-size:0.8rem;
+    color:var(--ink-soft);
+  }
+  .task-meta.overdue{ color:var(--high); font-weight:600; }
+
+  .task-actions{
+    display:flex;
+    gap:0.4rem;
+  }
+  .icon-btn{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:0.78rem;
+    padding:0.2rem 0.35rem;
+    border-radius:4px;
+  }
+  .icon-btn:hover{ background:var(--rule); color:var(--ink); }
+
+  .calendar-section{
+    margin-top:2.8rem;
+    padding-top:1.8rem;
+    border-top:1px solid var(--rule);
+  }
+  .cal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:1rem;
+  }
+  .cal-header h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.15rem;
+    margin:0;
+  }
+  .cal-nav{ display:flex; align-items:center; gap:0.6rem; }
+  .cal-nav button{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:6px;
+    width:28px;
+    height:28px;
+    font-size:0.9rem;
+    color:var(--ink);
+  }
+  .cal-nav button:hover{ background:var(--rule); }
+  .cal-nav span{ font-size:0.88rem; color:var(--ink-soft); min-width:110px; text-align:center; }
+
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:4px;
+  }
+  .cal-dow{
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+    text-align:center;
+    padding-bottom:0.3rem;
+  }
+  .cal-day{
+    aspect-ratio:1;
+    border:1px solid var(--rule);
+    border-radius:6px;
+    background:var(--card);
+    padding:0.3rem;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    cursor:pointer;
+    min-height:44px;
+  }
+  .cal-day.empty-cell{ visibility:hidden; }
+  .cal-day:hover{ border-color:var(--ink); }
+  .cal-day.today{ border-color:var(--ink); border-width:2px; }
+  .cal-day.selected{ background:var(--ink); }
+  .cal-day.selected .cal-daynum{ color:var(--paper); }
+  .cal-daynum{ font-size:0.78rem; font-weight:500; }
+  .cal-dots{ display:flex; gap:2px; flex-wrap:wrap; }
+  .cal-dot{ width:6px; height:6px; border-radius:50%; }
+  .cal-dot.high{ background:var(--high); }
+  .cal-dot.medium{ background:var(--med); }
+  .cal-dot.low{ background:var(--low); }
+
+  .daytype-bar{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:0.5rem;
+    margin-top:1rem;
+    padding-top:0.9rem;
+    border-top:1px dashed var(--rule);
+  }
+  .daytype-label{ font-size:0.8rem; color:var(--ink-soft); margin-right:0.2rem; }
+  .daytype-btn{
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:0.3rem 0.8rem;
+    font-size:0.78rem;
+    font-weight:600;
+    background:#fff;
+    color:var(--ink-soft);
+  }
+  .daytype-btn.d1{ border-color:#6f8fb8; color:#3d5a80; }
+  .daytype-btn.d1.active{ background:#3d5a80; color:#fff; border-color:#3d5a80; }
+  .daytype-btn.d2{ border-color:#b88f6f; color:#8a5a2b; }
+  .daytype-btn.d2.active{ background:#8a5a2b; color:#fff; border-color:#8a5a2b; }
+  .daytype-btn.clear{ font-weight:500; }
+  .daytype-hint{ font-size:0.76rem; color:var(--ink-soft); font-style:italic; }
+
+  .cal-daytag{
+    align-self:flex-start;
+    font-size:0.62rem;
+    font-weight:700;
+    padding:0 0.3rem;
+    border-radius:4px;
+    line-height:1.3;
+  }
+  .cal-daytag.d1{ background:#e3ebf5; color:#3d5a80; }
+  .cal-daytag.d2{ background:#f5e9dd; color:#8a5a2b; }
+
+  .cal-selected-list{ margin-top:1rem; }
+  .cal-selected-heading{
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    margin-bottom:0.5rem;
+  }
+
+  .empty{
+    text-align:center;
+    color:var(--ink-soft);
+    padding:2.5rem 1rem;
+    font-size:0.92rem;
+    border:1px dashed var(--line);
+    border-radius:8px;
+  }
+
+  @media (max-width:520px){
+    .add-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Homework planner</h1>
+    <p>Add, edit, and check off assignments as you go.</p>
+    <div class="stats">
+      <span><b id="stat-open">0</b> open</span>
+      <span><b id="stat-overdue">0</b> overdue</span>
+      <span><b id="stat-done">0</b> done</span>
+    </div>
+  </header>
+
+  <div class="add-panel">
+    <h2 id="form-heading">Add homework</h2>
+    <div class="add-grid">
+      <input type="text" id="f-name" placeholder="Assignment (e.g. Vocab list, Chapter 4 review)">
+      <div class="field">
+        <label for="f-subject">Subject</label>
+        <select id="f-subject">
+          <option>English</option>
+          <option>Math</option>
+          <option>Science</option>
+          <option>Socials</option>
+          <option>Web development</option>
+          <option>Media arts</option>
+          <option>Sat English</option>
+          <option>Sat Math</option>
+          <option>Elite English</option>
+          <option>Ap Statistics</option>
+          <option>Ap Principles</option>
+          <option value="__other">Other…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-priority">Priority</label>
+        <select id="f-priority">
+          <option value="high">High</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-due">Due date</label>
+        <input type="date" id="f-due">
+      </div>
+      <div class="field">
+        <label for="f-subject-other">Custom subject name</label>
+        <input type="text" id="f-subject-other" placeholder="Only if 'Other' selected">
+      </div>
+      <div class="add-actions">
+        <button class="btn-primary" id="f-submit">Add to list</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="sort-group">
+      <label for="sort-by">Sort by</label>
+      <select id="sort-by">
+        <option value="due">Due date</option>
+        <option value="priority">Priority</option>
+        <option value="subject">Subject</option>
+      </select>
+    </div>
+    <button class="toggle-done" id="toggle-done">Hide completed</button>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="calendar-section">
+    <div class="cal-header">
+      <h2>Calendar</h2>
+      <div class="cal-nav">
+        <button id="cal-prev" aria-label="Previous month">&lt;</button>
+        <span id="cal-label"></span>
+        <button id="cal-next" aria-label="Next month">&gt;</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="daytype-bar">
+      <span class="daytype-label">Tag school days:</span>
+      <button class="daytype-btn d1" id="dt-day1">Day 1</button>
+      <button class="daytype-btn d2" id="dt-day2">Day 2</button>
+      <button class="daytype-btn clear" id="dt-clear">Done tagging</button>
+      <span class="daytype-hint" id="daytype-hint"></span>
+    </div>
+    <div class="cal-selected-list" id="cal-selected-list"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'homework-tasks';
+const DAYTYPES_KEY = 'homework-daytypes';
+let tasks = [];
+let dayTypes = {};
+let armedDayType = null;
+let editingId = null;
+let hideDone = false;
+
+function uid(){ return 't' + Date.now() + Math.random().toString(16).slice(2,6); }
+
+async function load(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    tasks = res ? JSON.parse(res.value) : seedTasks();
+  }catch(e){
+    tasks = seedTasks();
+  }
+  if(!Array.isArray(tasks)) tasks = [];
+
+  try{
+    const res2 = await window.storage.get(DAYTYPES_KEY, false);
+    dayTypes = res2 ? JSON.parse(res2.value) : {};
+  }catch(e){
+    dayTypes = {};
+  }
+
+  render();
+}
+
+async function saveDayTypes(){
+  try{
+    await window.storage.set(DAYTYPES_KEY, JSON.stringify(dayTypes), false);
+  }catch(e){
+    console.error('Storage error', e);
+  }
+}
+
+function seedTasks(){
+  const today = new Date();
+  const iso = (d) => d.toISOString().slice(0,10);
+  const inDays = (n) => { const d = new Date(today); d.setDate(d.getDate()+n); return iso(d); };
+  return [
+    { id: uid(), name:'Weekly 30 vocab', subject:'Sat English', priority:'medium', due: inDays(4), done:false },
+    { id: uid(), name:'Packet', subject:'Ap Statistics', priority:'high', due: inDays(2), done:false },
+    { id: uid(), name:'Review previous packet and questions', subject:'Ap Statistics', priority:'medium', due: inDays(2), done:false },
+  ];
+}
+
+async function save(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(tasks), false);
+  }catch(e){
+    console.error('Storage error', e);
+  }
+}
+
+function fmtDue(due){
+  if(!due) return 'No due date';
+  const d = new Date(due + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((d - today) / 86400000);
+  const label = d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+  if(diff < 0) return { text:`${label} · overdue`, overdue:true };
+  if(diff === 0) return { text:`${label} · due today`, overdue:false };
+  if(diff === 1) return { text:`${label} · due tomorrow`, overdue:false };
+  return { text:`${label} · due in ${diff} days`, overdue:false };
+}
+
+function priorityRank(p){ return p === 'high' ? 0 : p === 'medium' ? 1 : 2; }
+
+function render(){
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+
+  const sortBy = document.getElementById('sort-by').value;
+  let visible = tasks.filter(t => !(hideDone && t.done));
+
+  visible.sort((a,b) => {
+    if(a.done !== b.done) return a.done ? 1 : -1;
+    if(sortBy === 'priority') return priorityRank(a.priority) - priorityRank(b.priority);
+    if(sortBy === 'subject') return a.subject.localeCompare(b.subject);
+    const da = a.due || '9999-99-99', db = b.due || '9999-99-99';
+    return da.localeCompare(db);
+  });
+
+  if(visible.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = tasks.length === 0
+      ? 'Nothing on the list yet. Add your first assignment above.'
+      : 'Nothing to show with the current filters.';
+    list.appendChild(empty);
+  }
+
+  visible.forEach(t => list.appendChild(taskCard(t)));
+
+  const open = tasks.filter(t => !t.done);
+  const overdue = open.filter(t => t.due && t.due < new Date().toISOString().slice(0,10));
+  document.getElementById('stat-open').textContent = open.length;
+  document.getElementById('stat-overdue').textContent = overdue.length;
+  document.getElementById('stat-done').textContent = tasks.filter(t => t.done).length;
+
+  renderCalendar();
+}
+
+let calDate = new Date();
+let calSelected = null;
+
+function renderCalendar(){
+  const grid = document.getElementById('cal-grid');
+  const label = document.getElementById('cal-label');
+  grid.innerHTML = '';
+
+  const year = calDate.getFullYear();
+  const month = calDate.getMonth();
+  label.textContent = calDate.toLocaleDateString(undefined, { month:'long', year:'numeric' });
+
+  const dows = ['S','M','T','W','T','F','S'];
+  dows.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  const tasksByDate = {};
+  tasks.forEach(t => {
+    if(!t.due || t.done) return;
+    (tasksByDate[t.due] = tasksByDate[t.due] || []).push(t);
+  });
+
+  for(let i = 0; i < firstDay; i++){
+    const filler = document.createElement('div');
+    filler.className = 'cal-day empty-cell';
+    grid.appendChild(filler);
+  }
+
+  for(let day = 1; day <= daysInMonth; day++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const cell = document.createElement('div');
+    cell.className = 'cal-day';
+    if(dateStr === todayStr) cell.classList.add('today');
+    if(dateStr === calSelected) cell.classList.add('selected');
+
+    const num = document.createElement('div');
+    num.className = 'cal-daynum';
+    num.textContent = day;
+    cell.appendChild(num);
+
+    if(dayTypes[dateStr]){
+      const tag = document.createElement('span');
+      tag.className = 'cal-daytag d' + dayTypes[dateStr];
+      tag.textContent = 'Day ' + dayTypes[dateStr];
+      cell.appendChild(tag);
+    }
+
+    const dueHere = tasksByDate[dateStr] || [];
+    if(dueHere.length){
+      const dots = document.createElement('div');
+      dots.className = 'cal-dots';
+      dueHere.slice(0,4).forEach(t => {
+        const dot = document.createElement('span');
+        dot.className = 'cal-dot ' + t.priority;
+        dots.appendChild(dot);
+      });
+      cell.appendChild(dots);
+    }
+
+    cell.addEventListener('click', () => {
+      if(armedDayType){
+        dayTypes[dateStr] = dayTypes[dateStr] === armedDayType ? undefined : armedDayType;
+        if(dayTypes[dateStr] === undefined) delete dayTypes[dateStr];
+        saveDayTypes();
+        renderCalendar();
+        return;
+      }
+      calSelected = calSelected === dateStr ? null : dateStr;
+      renderCalendar();
+      renderCalSelectedList();
+    });
+
+    grid.appendChild(cell);
+  }
+
+  renderCalSelectedList();
+  updateDaytypeHint();
+}
+
+function updateDaytypeHint(){
+  document.getElementById('dt-day1').classList.toggle('active', armedDayType === '1');
+  document.getElementById('dt-day2').classList.toggle('active', armedDayType === '2');
+  const hint = document.getElementById('daytype-hint');
+  hint.textContent = armedDayType
+    ? `Click any date to stamp it Day ${armedDayType} (click again to remove)`
+    : '';
+}
+
+document.getElementById('dt-day1').addEventListener('click', () => {
+  armedDayType = armedDayType === '1' ? null : '1';
+  updateDaytypeHint();
+});
+document.getElementById('dt-day2').addEventListener('click', () => {
+  armedDayType = armedDayType === '2' ? null : '2';
+  updateDaytypeHint();
+});
+document.getElementById('dt-clear').addEventListener('click', () => {
+  armedDayType = null;
+  updateDaytypeHint();
+});
+
+function renderCalSelectedList(){
+  const box = document.getElementById('cal-selected-list');
+  box.innerHTML = '';
+  if(!calSelected) return;
+
+  const heading = document.createElement('div');
+  heading.className = 'cal-selected-heading';
+  const d = new Date(calSelected + 'T00:00:00');
+  heading.textContent = `Due ${d.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' })}`;
+  box.appendChild(heading);
+
+  const dueHere = tasks.filter(t => t.due === calSelected);
+  if(dueHere.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Nothing due this day.';
+    box.appendChild(empty);
+    return;
+  }
+  dueHere.forEach(t => box.appendChild(taskCard(t)));
+}
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  calDate = new Date(calDate.getFullYear(), calDate.getMonth() - 1, 1);
+  renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  calDate = new Date(calDate.getFullYear(), calDate.getMonth() + 1, 1);
+  renderCalendar();
+});
+
+function taskCard(t){
+  const el = document.createElement('div');
+  el.className = `task pri-${t.priority}${t.done ? ' done' : ''}`;
+
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = t.done;
+  cb.addEventListener('change', () => { t.done = cb.checked; save(); render(); });
+
+  const main = document.createElement('div');
+  main.className = 'task-main';
+
+  const top = document.createElement('div');
+  top.className = 'task-top';
+  const name = document.createElement('span');
+  name.className = 'task-name';
+  name.textContent = t.name;
+  const subj = document.createElement('span');
+  subj.className = 'subject-tag';
+  subj.textContent = t.subject;
+  const pri = document.createElement('span');
+  pri.className = 'pri-tag ' + t.priority;
+  pri.textContent = t.priority.charAt(0).toUpperCase() + t.priority.slice(1);
+  top.append(name, subj, pri);
+
+  const meta = document.createElement('div');
+  const dueInfo = fmtDue(t.due);
+  meta.className = 'task-meta' + (dueInfo.overdue && !t.done ? ' overdue' : '');
+  meta.textContent = typeof dueInfo === 'string' ? dueInfo : dueInfo.text;
+
+  main.append(top, meta);
+
+  const actions = document.createElement('div');
+  actions.className = 'task-actions';
+  const editBtn = document.createElement('button');
+  editBtn.className = 'icon-btn';
+  editBtn.textContent = 'Priority';
+  editBtn.title = 'Click to cycle priority: high → medium → low';
+  editBtn.addEventListener('click', () => cyclePriority(t.id));
+  const delBtn = document.createElement('button');
+  delBtn.className = 'icon-btn';
+  delBtn.textContent = 'Delete';
+  delBtn.addEventListener('click', () => { tasks = tasks.filter(x => x.id !== t.id); save(); render(); });
+  actions.append(editBtn, delBtn);
+
+  el.append(cb, main, actions);
+  return el;
+}
+
+function cyclePriority(id){
+  const t = tasks.find(x => x.id === id);
+  if(!t) return;
+  const order = ['high', 'medium', 'low'];
+  const next = order[(order.indexOf(t.priority) + 1) % order.length];
+  t.priority = next;
+  save();
+  render();
+}
+
+function startEdit(id){
+  const t = tasks.find(x => x.id === id);
+  if(!t) return;
+  editingId = id;
+  document.getElementById('f-name').value = t.name;
+  document.getElementById('f-priority').value = t.priority;
+  document.getElementById('f-due').value = t.due || '';
+
+  const subjSelect = document.getElementById('f-subject');
+  const known = Array.from(subjSelect.options).some(o => o.value === t.subject);
+  if(known){
+    subjSelect.value = t.subject;
+    document.getElementById('f-subject-other').value = '';
+  } else {
+    subjSelect.value = '__other';
+    document.getElementById('f-subject-other').value = t.subject;
+  }
+
+  document.getElementById('form-heading').textContent = 'Edit homework';
+  document.getElementById('f-submit').textContent = 'Save changes';
+  document.getElementById('f-name').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function resetForm(){
+  editingId = null;
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-subject').value = 'English';
+  document.getElementById('f-subject-other').value = '';
+  document.getElementById('f-priority').value = 'medium';
+  document.getElementById('f-due').value = '';
+  document.getElementById('form-heading').textContent = 'Add homework';
+  document.getElementById('f-submit').textContent = 'Add to list';
+}
+
+document.getElementById('f-submit').addEventListener('click', () => {
+  const nameEl = document.getElementById('f-name');
+  const name = nameEl.value.trim();
+  if(!name){
+    nameEl.style.borderColor = 'var(--high)';
+    nameEl.placeholder = 'Enter an assignment name first';
+    return;
+  }
+  nameEl.style.borderColor = '';
+
+  let subject = document.getElementById('f-subject').value;
+  if(subject === '__other'){
+    const other = document.getElementById('f-subject-other').value.trim();
+    subject = other || 'Other';
+  }
+  const priority = document.getElementById('f-priority').value;
+  const due = document.getElementById('f-due').value;
+
+  if(editingId){
+    const t = tasks.find(x => x.id === editingId);
+    if(t){ t.name = name; t.subject = subject; t.priority = priority; t.due = due; }
+  } else {
+    tasks.push({ id: uid(), name, subject, priority, due, done:false });
+  }
+  save();
+  resetForm();
+  render();
+});
+
+document.getElementById('sort-by').addEventListener('change', render);
+document.getElementById('toggle-done').addEventListener('click', function(){
+  hideDone = !hideDone;
+  this.classList.toggle('active', hideDone);
+  this.textContent = hideDone ? 'Show completed' : 'Hide completed';
+  render();
+});
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Planner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ---------- Theme tokens ---------- */
+:root,
+[data-theme="aurora"]{
+  --bg-1:#1a1140;
+  --bg-2:#2d1263;
+  --bg-3:#4a1259;
+  --accent-1:#ff5d8f; /* primary / add button / selection */
+  --accent-2:#4cc9f0; /* secondary / checks / links */
+  --accent-3:#ffd166; /* tertiary / today / now-line */
+}
+
+[data-theme="sunset"]{
+  --bg-1:#2b0f12;
+  --bg-2:#5c1a2b;
+  --bg-3:#7a2e12;
+  --accent-1:#ff7849;
+  --accent-2:#ffcf56;
+  --accent-3:#ff4d6d;
+}
+
+[data-theme="meadow"]{
+  --bg-1:#0b2e1f;
+  --bg-2:#114b32;
+  --bg-3:#1c6b4a;
+  --accent-1:#6be8a0;
+  --accent-2:#ffd93d;
+  --accent-3:#ff9f68;
+}
+
+[data-theme="berry"]{
+  --bg-1:#1c0f2e;
+  --bg-2:#341a52;
+  --bg-3:#4d1f63;
+  --accent-1:#c77dff;
+  --accent-2:#7bdff2;
+  --accent-3:#ffb4a2;
+}
+
+:root{
+  --ink:#f4f0ff;
+  --ink-dim:#c9bfe8;
+  --glass:rgba(255,255,255,0.06);
+  --glass-border:rgba(255,255,255,0.14);
+  --row-height:56px;
+  --gutter-width:64px;
+}
+
+/* ---------- Base ---------- */
+html, body{
+  font-family:'Inter', sans-serif;
+  background:
+    radial-gradient(circle at 15% 10%, var(--bg-3) 0%, transparent 45%),
+    radial-gradient(circle at 85% 0%, var(--accent-2) 0%, transparent 25%),
+    linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 60%, #0d0620 100%);
+  background-attachment:fixed;
+  color:var(--ink);
+  min-height:100vh;
+  transition:background 0.4s ease;
+}
+
+.font-display{ font-family:'Sora', sans-serif; }
+
+.accent-dot{ color:var(--accent-1); }
+
+.glass{
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+::selection{ background:var(--accent-1); color:#160a2e; }
+
+input::placeholder{ color:var(--ink-dim); opacity:0.7; }
+
+.scroll-thin::-webkit-scrollbar{ width:6px; height:6px; }
+.scroll-thin::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.2); border-radius:99px; }
+
+/* ---------- Buttons / chips ---------- */
+.settings-btn{
+  transition:border-color .2s ease, transform .2s ease;
+}
+.settings-btn:hover{ transform:translateY(-1px); border-color:var(--accent-2); }
+
+#addBtn{
+  background:linear-gradient(90deg, var(--accent-1), var(--bg-3));
+  color:#160a2e;
+}
+
+.chip{
+  padding:0.5rem 0.9rem;
+  border-radius:0.75rem;
+  border:1px solid var(--glass-border);
+  background:rgba(255,255,255,0.04);
+  font-size:0.8rem;
+  font-family:'Inter', sans-serif;
+  color:var(--ink-dim);
+  cursor:pointer;
+  transition:background .2s ease, color .2s ease, border-color .2s ease;
+}
+.chip:hover{ border-color:rgba(255,255,255,0.35); color:var(--ink); }
+.chip.active{
+  background:linear-gradient(90deg, var(--accent-1), var(--accent-3));
+  color:#160a2e;
+  border-color:transparent;
+  font-weight:600;
+}
+.chip-sm{ padding:0.4rem 0.7rem; font-size:0.72rem; }
+
+.theme-swatch{
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  cursor:pointer;
+  border:2px solid transparent;
+  transition:transform .15s ease, border-color .15s ease;
+}
+.theme-swatch:hover{ transform:scale(1.1); }
+.theme-swatch.active{ border-color:var(--ink); transform:scale(1.12); }
+
+.hour-select{
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--glass-border);
+  border-radius:0.6rem;
+  padding:0.4rem 0.6rem;
+  font-size:0.8rem;
+  color:var(--ink);
+}
+.hour-select option{ color:#111; }
+
+/* ---------- Calendar time-grid ---------- */
+.calendar-scroll{
+  max-height:70vh;
+  overflow:auto;
+  position:relative;
+}
+
+.calendar-grid{
+  display:grid;
+  grid-template-columns: var(--gutter-width) repeat(7, minmax(128px, 1fr));
+  min-width:750px;
+  position:relative;
+}
+
+.cal-cell{
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  border-right:1px solid rgba(255,255,255,0.06);
+  min-height:var(--row-height);
+  padding:4px 6px;
+  position:relative;
+}
+
+.cal-corner{
+  position:sticky;
+  top:0; left:0;
+  z-index:30;
+  background:var(--bg-2);
+}
+
+.cal-day-header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:var(--bg-2);
+  padding:10px 8px;
+  text-align:center;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  border-right:1px solid rgba(255,255,255,0.06);
+}
+
+.cal-day-header.is-today{
+  background:linear-gradient(180deg, rgba(255,93,143,0.28), var(--bg-2) 90%);
+}
+
+.cal-time-label{
+  position:sticky;
+  left:0;
+  z-index:15;
+  background:var(--bg-2);
+  font-size:0.68rem;
+  color:var(--ink-dim);
+  text-align:right;
+  padding:4px 8px 0 0;
+  border-right:1px solid rgba(255,255,255,0.08);
+}
+
+.cal-slot{
+  cursor:pointer;
+  transition:background .15s ease;
+}
+.cal-slot:hover{ background:rgba(255,255,255,0.05); }
+
+.cal-slot.is-today-col{
+  background:rgba(255,255,255,0.035);
+}
+.cal-slot.is-today-col:hover{ background:rgba(255,255,255,0.07); }
+
+.today-badge{
+  display:inline-block;
+  margin-top:4px;
+  font-size:9px;
+  letter-spacing:.04em;
+  font-weight:700;
+  padding:2px 8px;
+  border-radius:999px;
+  background:linear-gradient(90deg, var(--accent-3), var(--accent-1));
+  color:#1a1140;
+}
+
+.event-chip{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  font-size:11px;
+  line-height:1.2;
+  padding:3px 6px;
+  border-radius:6px;
+  background:linear-gradient(100deg, rgba(255,93,143,0.35), rgba(76,201,240,0.25));
+  border:1px solid rgba(255,255,255,0.18);
+  margin-bottom:3px;
+  word-break:break-word;
+}
+.event-chip.event-done{
+  opacity:0.45;
+  text-decoration:line-through;
+}
+.event-chip .event-del{
+  margin-left:auto;
+  flex-shrink:0;
+  opacity:0.55;
+  cursor:pointer;
+}
+.event-chip .event-del:hover{ opacity:1; }
+
+.slot-input-row{
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+.slot-input{
+  flex:1;
+  min-width:0;
+  background:rgba(0,0,0,0.35);
+  border:1px solid var(--accent-2);
+  border-radius:6px;
+  color:var(--ink);
+  font-size:11px;
+  padding:4px 6px;
+}
+
+.slot-cancel{
+  flex-shrink:0;
+  width:18px;
+  height:18px;
+  border-radius:5px;
+  border:1px solid rgba(255,255,255,0.25);
+  background:rgba(255,255,255,0.06);
+  color:var(--ink-dim);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+.slot-cancel:hover{
+  color:var(--ink);
+  border-color:rgba(255,255,255,0.5);
+  background:rgba(255,255,255,0.12);
+}
+
+.now-line{
+  position:absolute;
+  height:2px;
+  background:var(--accent-3);
+  box-shadow:0 0 8px var(--accent-3);
+  z-index:8;
+  pointer-events:none;
+}
+.now-line::before{
+  content:"";
+  position:absolute;
+  left:-4px; top:-3px;
+  width:8px; height:8px;
+  border-radius:999px;
+  background:var(--accent-3);
+  box-shadow:0 0 8px var(--accent-3);
+}
+
+/* ---------- Task list ---------- */
+.task-enter{ animation:taskIn .28s ease-out; }
+@keyframes taskIn{
+  from{opacity:0; transform:translateY(-6px);}
+  to{opacity:1; transform:translateY(0);}
+}
+.task-done{ text-decoration:line-through; opacity:0.45; }
+
+@media (prefers-reduced-motion: reduce){
+  .task-enter{ transition:none; animation:none; }
+  .settings-btn, .theme-swatch{ transition:none; }
+}
+
+</style>
+</head>
+<body class="antialiased">
+
+<div class="max-w-[1600px] mx-auto px-4 sm:px-8 py-8 sm:py-12">
+
+  <!-- Header -->
+  <header class="mb-6 sm:mb-8">
+    <p id="greeting" class="font-display text-sm sm:text-base tracking-wide text-cyan-200/80 mb-2">Welcome back</p>
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <h1 class="font-display font-800 text-4xl sm:text-5xl leading-tight" style="font-weight:800;">
+        Your week<span class="accent-dot">.</span>
+      </h1>
+      <div class="flex items-center gap-3">
+        <p id="monthYear" class="font-display text-xl sm:text-2xl text-white/70"></p>
+        <button id="settingsToggle" class="settings-btn glass rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-sm font-display" aria-expanded="false" aria-controls="settingsPanel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg>
+          Customize
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Settings / Customization Panel -->
+  <section id="settingsPanel" class="glass rounded-2xl p-5 sm:p-6 mb-6 hidden">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <div>
+        <p class="text-xs tracking-wide text-white/50 mb-2.5 font-display">Theme</p>
+        <div id="themeSwatches" class="flex gap-2.5"></div>
+      </div>
+
+      <div>
+        <p class="text-xs tracking-wide text-white/50 mb-2.5 font-display">Time format</p>
+        <div class="flex gap-2" id="formatButtons">
+          <button data-format="12" class="chip">12-hour</button>
+          <button data-format="24" class="chip">24-hour</button>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-xs tracking-wide text-white/50 mb-2.5 font-display">Hours shown</p>
+        <div class="flex items-center gap-2 mb-2">
+          <select id="hourStartSelect" class="hour-select"></select>
+          <span class="text-white/40 text-sm">to</span>
+          <select id="hourEndSelect" class="hour-select"></select>
+        </div>
+        <div class="flex gap-2">
+          <button id="presetFullDay" class="chip chip-sm">Full day</button>
+          <button id="presetWorkHours" class="chip chip-sm">Work hours</button>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-xs tracking-wide text-white/50 mb-2.5 font-display">Week starts on</p>
+        <div class="flex gap-2" id="weekStartButtons">
+          <button data-weekstart="monday" class="chip">Monday</button>
+          <button data-weekstart="sunday" class="chip">Sunday</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 sm:gap-8 items-start">
+
+    <!-- Time-grid weekly calendar -->
+    <section aria-label="This week" class="glass rounded-2xl overflow-hidden">
+      <div id="calendarScroll" class="calendar-scroll">
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </div>
+    </section>
+
+    <!-- Side Panel Quick Task Tracker -->
+    <aside class="glass rounded-2xl p-5 sm:p-6 xl:sticky xl:top-8">
+      <h2 class="font-display text-lg font-semibold mb-1">Quick tasks</h2>
+      <p class="text-sm text-white/50 mb-4">Not tied to a time &middot; saved on this device</p>
+
+      <form id="taskForm" class="flex gap-2 mb-5">
+        <input
+          id="taskInput"
+          type="text"
+          autocomplete="off"
+          placeholder="Add a task..."
+          class="flex-1 min-w-0 bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2"
+        >
+        <button id="addBtn" type="submit" class="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold font-display">Add</button>
+      </form>
+
+      <ul id="taskList" class="space-y-2 max-h-[420px] overflow-y-auto scroll-thin pr-1"></ul>
+
+      <p id="emptyState" class="text-sm text-white/40 italic mt-2">Nothing on your list yet. Add your first task above.</p>
+
+      <div class="flex items-center justify-between mt-4 pt-4 border-t border-white/10 text-xs text-white/50">
+        <span id="taskCount">0 tasks</span>
+        <button id="clearDone" class="hover:text-white/90 transition-colors underline decoration-white/20">Clear completed</button>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =========================================================
+     SETTINGS
+     ========================================================= */
+  const SETTINGS_KEY = "weeklyPlanner.settings";
+  const DEFAULT_SETTINGS = {
+    theme: "aurora",       // aurora | sunset | meadow | berry
+    format: "12",          // "12" | "24"
+    hourStart: 0,          // 0-23
+    hourEnd: 23,           // 0-23, inclusive
+    weekStart: "monday"    // "monday" | "sunday"
+  };
+
+  function loadSettings(){
+    try{
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if(!raw) return { ...DEFAULT_SETTINGS };
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    }catch(e){
+      console.error("Could not read settings:", e);
+      return { ...DEFAULT_SETTINGS };
+    }
+  }
+
+  function saveSettings(){
+    try{
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }catch(e){
+      console.error("Could not save settings:", e);
+    }
+  }
+
+  let settings = loadSettings();
+
+  const THEMES = [
+    { id: "aurora", label: "Aurora", color: "#ff5d8f" },
+    { id: "sunset", label: "Sunset", color: "#ff7849" },
+    { id: "meadow", label: "Meadow", color: "#6be8a0" },
+    { id: "berry",  label: "Berry",  color: "#c77dff" }
+  ];
+
+  function applyTheme(){
+    document.documentElement.setAttribute("data-theme", settings.theme);
+  }
+
+  /* =========================================================
+     TIME / DATE UTILITIES
+     ========================================================= */
+  const dayNamesMon = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const dayShortMon = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  function formatHour(hour, format){
+    format = format || settings.format;
+    if(format === "24"){
+      return String(hour).padStart(2,"0") + ":00";
+    }
+    const h12 = hour % 12 === 0 ? 12 : hour % 12;
+    const suffix = hour < 12 ? "AM" : "PM";
+    return h12 + " " + suffix;
+  }
+
+  function dateKey(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function isSameDay(a,b){
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth() === b.getMonth() &&
+           a.getDate() === b.getDate();
+  }
+
+  function getWeekDates(today){
+    const jsDay = today.getDay(); // 0=Sun..6=Sat
+    let offset;
+    if(settings.weekStart === "sunday"){
+      offset = -jsDay;
+    } else {
+      offset = (jsDay === 0) ? -6 : (1 - jsDay);
+    }
+    const start = new Date(today);
+    start.setDate(today.getDate() + offset);
+    start.setHours(0,0,0,0);
+
+    const week = [];
+    for(let i = 0; i < 7; i++){
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      week.push(d);
+    }
+    return week;
+  }
+
+  function orderedDayLabels(){
+    if(settings.weekStart === "sunday"){
+      return {
+        full: ["Sunday", ...dayNamesMon.slice(0,6)],
+        short: ["SUN", ...dayShortMon.slice(0,6)]
+      };
+    }
+    return { full: dayNamesMon, short: dayShortMon };
+  }
+
+  /* =========================================================
+     EVENTS (time-specific items on the calendar)
+     ========================================================= */
+  const EVENTS_KEY = "weeklyPlanner.events";
+
+  function loadEvents(){
+    try{
+      const raw = localStorage.getItem(EVENTS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){
+      console.error("Could not read events:", e);
+      return {};
+    }
+  }
+
+  function saveEvents(){
+    try{
+      localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+    }catch(e){
+      console.error("Could not save events:", e);
+    }
+  }
+
+  let events = loadEvents(); // { "YYYY-MM-DD": [ {id, hour, text, done} ] }
+
+  function getEventsFor(key, hour){
+    const list = events[key] || [];
+    return list.filter(ev => ev.hour === hour);
+  }
+
+  function addEvent(key, hour, text){
+    if(!events[key]) events[key] = [];
+    events[key].push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+      hour: hour,
+      text: text,
+      done: false
+    });
+    saveEvents();
+  }
+
+  function toggleEvent(key, id){
+    const list = events[key] || [];
+    const ev = list.find(e => e.id === id);
+    if(ev){ ev.done = !ev.done; saveEvents(); }
+  }
+
+  function deleteEvent(key, id){
+    if(!events[key]) return;
+    events[key] = events[key].filter(e => e.id !== id);
+    saveEvents();
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /* =========================================================
+     CALENDAR RENDER
+     ========================================================= */
+  const grid = document.getElementById("calendarGrid");
+
+  function hourRange(){
+    let start = settings.hourStart, end = settings.hourEnd;
+    if(start > end) [start, end] = [end, start];
+    const hours = [];
+    for(let h = start; h <= end; h++) hours.push(h);
+    return hours;
+  }
+
+  function renderCalendar(){
+    applyTheme();
+
+    const now = new Date();
+    const week = getWeekDates(now);
+    const labels = orderedDayLabels();
+    const hours = hourRange();
+
+    document.getElementById("monthYear").textContent = monthNames[now.getMonth()] + " " + now.getFullYear();
+
+    const hour = now.getHours();
+    let greet = "Welcome back";
+    if(hour < 12) greet = "Good morning";
+    else if(hour < 18) greet = "Good afternoon";
+    else greet = "Good evening";
+    document.getElementById("greeting").textContent = greet;
+
+    grid.innerHTML = "";
+    grid.style.gridTemplateRows = `auto repeat(${hours.length}, var(--row-height))`;
+
+    // Corner cell
+    const corner = document.createElement("div");
+    corner.className = "cal-cell cal-corner";
+    corner.style.gridColumn = "1";
+    corner.style.gridRow = "1";
+    grid.appendChild(corner);
+
+    let todayColIndex = -1;
+
+    // Day headers
+    week.forEach((d, i) => {
+      const today = isSameDay(d, now);
+      if(today) todayColIndex = i;
+      const header = document.createElement("div");
+      header.className = "cal-cell cal-day-header" + (today ? " is-today" : "");
+      header.style.gridColumn = String(i + 2);
+      header.style.gridRow = "1";
+      header.dataset.dayIndex = String(i);
+      header.innerHTML = `
+        <p class="text-[10px] tracking-wide text-white/50 font-display">${labels.short[i]}</p>
+        <p class="font-display text-lg" style="font-weight:700;">${d.getDate()}</p>
+        ${today ? '<span class="today-badge">TODAY</span>' : ''}
+      `;
+      grid.appendChild(header);
+    });
+
+    // Hour rows
+    hours.forEach((h, rowIdx) => {
+      const rowNum = rowIdx + 2;
+
+      const timeLabel = document.createElement("div");
+      timeLabel.className = "cal-cell cal-time-label";
+      timeLabel.style.gridColumn = "1";
+      timeLabel.style.gridRow = String(rowNum);
+      timeLabel.textContent = formatHour(h);
+      grid.appendChild(timeLabel);
+
+      week.forEach((d, colIdx) => {
+        const today = isSameDay(d, now);
+        const key = dateKey(d);
+        const slot = document.createElement("div");
+        slot.className = "cal-cell cal-slot" + (today ? " is-today-col" : "");
+        slot.style.gridColumn = String(colIdx + 2);
+        slot.style.gridRow = String(rowNum);
+        slot.dataset.date = key;
+        slot.dataset.hour = String(h);
+
+        renderSlotContent(slot, key, h);
+
+        slot.addEventListener("click", (e) => {
+          if(e.target.closest(".event-del") || e.target.closest(".event-chip") || e.target.closest(".slot-input")) return;
+          openSlotInput(slot, key, h);
+        });
+
+        grid.appendChild(slot);
+      });
+    });
+
+    positionNowLine(week, hours, todayColIndex, now);
+  }
+
+  function renderSlotContent(slot, key, hour){
+    const existingInput = slot.querySelector(".slot-input");
+    if(existingInput) return; // don't clobber an open input
+    const evs = getEventsFor(key, hour);
+    slot.innerHTML = "";
+    evs.forEach(ev => {
+      const chip = document.createElement("div");
+      chip.className = "event-chip" + (ev.done ? " event-done" : "");
+      chip.innerHTML = `
+        <span class="flex-1 cursor-pointer">${escapeHtml(ev.text)}</span>
+        <svg class="event-del" width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      `;
+      chip.querySelector("span").addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleEvent(key, ev.id);
+        renderSlotContent(slot, key, hour);
+      });
+      chip.querySelector(".event-del").addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteEvent(key, ev.id);
+        renderSlotContent(slot, key, hour);
+      });
+      slot.appendChild(chip);
+    });
+  }
+
+  function openSlotInput(slot, key, hour){
+    if(slot.querySelector(".slot-input-row")) return;
+
+    let cancelled = false;
+
+    const row = document.createElement("div");
+    row.className = "slot-input-row";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "slot-input";
+    input.placeholder = "Add at " + formatHour(hour) + "...";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "slot-cancel";
+    cancelBtn.setAttribute("aria-label", "Cancel");
+    cancelBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
+
+    row.appendChild(input);
+    row.appendChild(cancelBtn);
+    slot.appendChild(row);
+    input.focus();
+
+    function commit(){
+      if(cancelled) return;
+      const text = input.value.trim();
+      if(text){
+        addEvent(key, hour, text);
+      }
+      renderSlotContent(slot, key, hour);
+    }
+
+    function cancel(){
+      cancelled = true;
+      renderSlotContent(slot, key, hour);
+    }
+
+    input.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){ e.preventDefault(); commit(); }
+      if(e.key === "Escape"){ e.preventDefault(); cancel(); }
+    });
+    input.addEventListener("blur", () => {
+      // Let a cancel-button click register before we commit on blur.
+      setTimeout(commit, 120);
+    });
+    input.addEventListener("click", (e) => e.stopPropagation());
+
+    // Prevent the input's blur-commit from racing ahead of the cancel click.
+    cancelBtn.addEventListener("mousedown", (e) => e.preventDefault());
+    cancelBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      cancel();
+    });
+  }
+
+  function positionNowLine(week, hours, todayColIndex, now){
+    let line = document.getElementById("nowLine");
+    if(line) line.remove();
+
+    const currentHour = now.getHours();
+    if(todayColIndex === -1 || currentHour < hours[0] || currentHour > hours[hours.length - 1]) return;
+
+    const targetCell = grid.querySelector(`.cal-slot[data-hour="${currentHour}"][data-date="${dateKey(week[todayColIndex])}"]`);
+    const headerCell = grid.querySelector(`.cal-day-header[data-day-index="${todayColIndex}"]`);
+    if(!targetCell || !headerCell) return;
+
+    const gridRect = grid.getBoundingClientRect();
+    const cellRect = targetCell.getBoundingClientRect();
+    const headerRect = headerCell.getBoundingClientRect();
+
+    const minuteFraction = now.getMinutes() / 60;
+    const top = (cellRect.top - gridRect.top) + minuteFraction * cellRect.height;
+    const left = headerRect.left - gridRect.left;
+    const width = headerRect.width;
+
+    line = document.createElement("div");
+    line.id = "nowLine";
+    line.className = "now-line";
+    line.style.top = top + "px";
+    line.style.left = left + "px";
+    line.style.width = width + "px";
+    grid.appendChild(line);
+  }
+
+  renderCalendar();
+  setInterval(renderCalendar, 60 * 1000);
+  window.addEventListener("resize", renderCalendar);
+
+  /* =========================================================
+     SETTINGS PANEL WIRING
+     ========================================================= */
+  const settingsToggle = document.getElementById("settingsToggle");
+  const settingsPanel = document.getElementById("settingsPanel");
+
+  settingsToggle.addEventListener("click", () => {
+    const isHidden = settingsPanel.classList.contains("hidden");
+    settingsPanel.classList.toggle("hidden");
+    settingsToggle.setAttribute("aria-expanded", String(isHidden));
+  });
+
+  // Theme swatches
+  const themeSwatchesEl = document.getElementById("themeSwatches");
+  function renderThemeSwatches(){
+    themeSwatchesEl.innerHTML = "";
+    THEMES.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = "theme-swatch" + (settings.theme === t.id ? " active" : "");
+      btn.style.background = t.color;
+      btn.title = t.label;
+      btn.setAttribute("aria-label", "Theme: " + t.label);
+      btn.addEventListener("click", () => {
+        settings.theme = t.id;
+        saveSettings();
+        renderThemeSwatches();
+        renderCalendar();
+      });
+      themeSwatchesEl.appendChild(btn);
+    });
+  }
+  renderThemeSwatches();
+
+  // Format buttons
+  const formatButtons = document.querySelectorAll("#formatButtons .chip");
+  function refreshFormatButtons(){
+    formatButtons.forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.format === settings.format);
+    });
+  }
+  formatButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      settings.format = btn.dataset.format;
+      saveSettings();
+      refreshFormatButtons();
+      populateHourSelects();
+      renderCalendar();
+    });
+  });
+  refreshFormatButtons();
+
+  // Week start buttons
+  const weekStartButtons = document.querySelectorAll("#weekStartButtons .chip");
+  function refreshWeekStartButtons(){
+    weekStartButtons.forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.weekstart === settings.weekStart);
+    });
+  }
+  weekStartButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      settings.weekStart = btn.dataset.weekstart;
+      saveSettings();
+      refreshWeekStartButtons();
+      renderCalendar();
+    });
+  });
+  refreshWeekStartButtons();
+
+  // Hour range selects
+  const hourStartSelect = document.getElementById("hourStartSelect");
+  const hourEndSelect = document.getElementById("hourEndSelect");
+
+  function populateHourSelects(){
+    hourStartSelect.innerHTML = "";
+    hourEndSelect.innerHTML = "";
+    for(let h = 0; h < 24; h++){
+      const opt1 = document.createElement("option");
+      opt1.value = String(h);
+      opt1.textContent = formatHour(h);
+      if(h === settings.hourStart) opt1.selected = true;
+      hourStartSelect.appendChild(opt1);
+
+      const opt2 = document.createElement("option");
+      opt2.value = String(h);
+      opt2.textContent = formatHour(h);
+      if(h === settings.hourEnd) opt2.selected = true;
+      hourEndSelect.appendChild(opt2);
+    }
+  }
+  populateHourSelects();
+
+  hourStartSelect.addEventListener("change", () => {
+    settings.hourStart = parseInt(hourStartSelect.value, 10);
+    saveSettings();
+    renderCalendar();
+  });
+  hourEndSelect.addEventListener("change", () => {
+    settings.hourEnd = parseInt(hourEndSelect.value, 10);
+    saveSettings();
+    renderCalendar();
+  });
+
+  document.getElementById("presetFullDay").addEventListener("click", () => {
+    settings.hourStart = 0;
+    settings.hourEnd = 23;
+    saveSettings();
+    populateHourSelects();
+    renderCalendar();
+  });
+  document.getElementById("presetWorkHours").addEventListener("click", () => {
+    settings.hourStart = 7;
+    settings.hourEnd = 19;
+    saveSettings();
+    populateHourSelects();
+    renderCalendar();
+  });
+
+  /* =========================================================
+     QUICK TASK TRACKER (not tied to a specific time)
+     ========================================================= */
+  const TASKS_KEY = "weeklyPlanner.tasks";
+
+  function loadTasks(){
+    try{
+      const raw = localStorage.getItem(TASKS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){
+      console.error("Could not read tasks:", e);
+      return [];
+    }
+  }
+
+  function saveTasks(){
+    try{
+      localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+    }catch(e){
+      console.error("Could not save tasks:", e);
+    }
+  }
+
+  let tasks = loadTasks();
+
+  const taskList = document.getElementById("taskList");
+  const taskForm = document.getElementById("taskForm");
+  const taskInput = document.getElementById("taskInput");
+  const emptyState = document.getElementById("emptyState");
+  const taskCount = document.getElementById("taskCount");
+  const clearDoneBtn = document.getElementById("clearDone");
+
+  function renderTasks(){
+    taskList.innerHTML = "";
+    emptyState.style.display = tasks.length === 0 ? "block" : "none";
+
+    tasks.forEach(task => {
+      const li = document.createElement("li");
+      li.className = "task-enter flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5";
+      li.innerHTML = `
+        <button class="toggle-btn shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-colors"
+          style="border-color:${task.done ? 'var(--accent-2)' : 'rgba(255,255,255,0.3)'}; background:${task.done ? 'var(--accent-2)' : 'transparent'};"
+          aria-label="${task.done ? 'Mark incomplete' : 'Mark complete'}">
+          ${task.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#160a2e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+        </button>
+        <span class="flex-1 text-sm ${task.done ? 'task-done' : ''}">${escapeHtml(task.text)}</span>
+        <button class="delete-btn shrink-0 text-white/30 hover:text-white/80 transition-colors" aria-label="Delete task">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      `;
+      li.querySelector(".toggle-btn").addEventListener("click", () => {
+        task.done = !task.done;
+        saveTasks();
+        renderTasks();
+      });
+      li.querySelector(".delete-btn").addEventListener("click", () => {
+        tasks = tasks.filter(t => t.id !== task.id);
+        saveTasks();
+        renderTasks();
+      });
+      taskList.appendChild(li);
+    });
+
+    const activeCount = tasks.filter(t => !t.done).length;
+    taskCount.textContent = tasks.length === 0 ? "0 tasks" : `${activeCount} of ${tasks.length} remaining`;
+  }
+
+  taskForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = taskInput.value.trim();
+    if(!text) return;
+    tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), text, done: false });
+    saveTasks();
+    renderTasks();
+    taskInput.value = "";
+    taskInput.focus();
+  });
+
+  clearDoneBtn.addEventListener("click", () => {
+    tasks = tasks.filter(t => !t.done);
+    saveTasks();
+    renderTasks();
+  });
+
+  renderTasks();
+})();
+
+</script>
+</body>
+</html>
